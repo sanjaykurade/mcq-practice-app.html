@@ -1,0 +1,639 @@
+# mcq-practice-app.html
+MCQ App
+
+
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>MCQ Cockpit — Practice App</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0A0E17">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root{
+    --bg:#0A0E17;
+    --panel:#121A2B;
+    --panel2:#0F1524;
+    --border:#232C42;
+    --amber:#F4A93B;
+    --teal:#2FD9A6;
+    --red:#E5484D;
+    --text:#EAF0F6;
+    --muted:#8592AA;
+    --mono: 'IBM Plex Mono', monospace;
+    --disp: 'Orbitron', sans-serif;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 50% -10%, #16213a 0%, var(--bg) 60%);
+    color:var(--text);
+    font-family:var(--sans);
+    min-height:100vh;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding:16px 16px 32px;}
+  .rivet-bar{display:flex;align-items:center;justify-content:space-between;padding:6px 2px 18px;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--teal);box-shadow:0 0 10px var(--teal);}
+  .brand span{font-family:var(--disp);font-weight:700;letter-spacing:2px;font-size:15px;color:var(--text);}
+  .brand small{display:block;font-size:9px;letter-spacing:3px;color:var(--muted);margin-top:2px;}
+
+  .panel{background:linear-gradient(180deg, var(--panel), var(--panel2));border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 8px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03);}
+  .panel h2{margin:0 0 4px;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:600;}
+  .panel .big{font-family:var(--disp);font-size:30px;font-weight:700;color:var(--text);}
+
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .stat{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:12px;}
+  .stat label{display:block;font-size:10px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;}
+  .stat .val{font-family:var(--disp);font-size:22px;color:var(--amber);}
+  .stat .val.teal{color:var(--teal);}
+
+  button{font-family:var(--sans);cursor:pointer;border:none;}
+  .btn{background:linear-gradient(180deg,#2A3550,#1B2338);color:var(--text);border:1px solid var(--border);padding:14px 18px;border-radius:12px;font-size:15px;font-weight:600;width:100%;transition:transform .1s ease, border-color .15s ease;}
+  .btn:active{transform:scale(0.98);}
+  .btn.primary{background:linear-gradient(180deg,#F4A93B,#D98A1F);color:#1A1300;border:none;box-shadow:0 6px 18px rgba(244,169,59,0.25);}
+  .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}
+  .btn.danger{background:linear-gradient(180deg,#E5484D,#B92E33);color:#fff;}
+  .btn:disabled{opacity:0.35;pointer-events:none;}
+  .btn-row{display:flex;gap:10px;}
+  .btn-row .btn{flex:1;}
+
+  .upload-zone{border:1.5px dashed var(--border);border-radius:14px;padding:28px 16px;text-align:center;color:var(--muted);cursor:pointer;transition:border-color .15s;}
+  .upload-zone:hover{border-color:var(--amber);}
+  .upload-zone svg{margin-bottom:8px;}
+  input[type=file]{display:none;}
+  input[type=number], input[type=text]{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px;font-size:16px;font-family:var(--mono);}
+  label.field-label{display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:0 0 6px;}
+  .field{margin-bottom:16px;}
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:16px;}
+  .switch{width:44px;height:26px;border-radius:20px;background:#2A3550;position:relative;transition:background .2s;flex-shrink:0;}
+  .switch.on{background:var(--teal);}
+  .switch .knob{width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:left .2s;}
+  .switch.on .knob{left:21px;}
+
+  /* Timer ring */
+  .timer-wrap{display:flex;align-items:center;gap:14px;}
+  .ring{width:64px;height:64px;border-radius:50%;position:relative;flex-shrink:0;background:conic-gradient(var(--amber) calc(var(--pct)*1%), #232C42 0);}
+  .ring::before{content:'';position:absolute;inset:5px;background:var(--panel);border-radius:50%;}
+  .ring span{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;height:100%;font-family:var(--mono);font-size:12px;font-weight:600;}
+  .ring.low{background:conic-gradient(var(--red) calc(var(--pct)*1%), #232C42 0);}
+
+  /* Quiz */
+  .q-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .q-progress{font-family:var(--mono);font-size:13px;color:var(--muted);}
+  .q-progress b{color:var(--text);}
+  .qcard{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;min-height:110px;}
+  .qcard .qnum{font-family:var(--disp);color:var(--amber);font-size:12px;letter-spacing:2px;margin-bottom:8px;}
+  .qcard .qtext{font-size:16px;line-height:1.5;color:var(--text);}
+  .opt{display:flex;align-items:center;gap:12px;background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;font-size:15px;transition:border-color .15s, background .15s;}
+  .opt .key{width:28px;height:28px;border-radius:8px;background:#1B2338;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:600;color:var(--muted);flex-shrink:0;font-size:13px;}
+  .opt.selected{border-color:var(--amber);background:rgba(244,169,59,0.08);}
+  .opt.selected .key{background:var(--amber);color:#1A1300;}
+  .opt.correct{border-color:var(--teal);background:rgba(47,217,166,0.08);}
+  .opt.correct .key{background:var(--teal);color:#04231A;}
+  .opt.wrong{border-color:var(--red);background:rgba(229,72,77,0.08);}
+  .opt.wrong .key{background:var(--red);color:#fff;}
+
+  .palette{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-bottom:16px;}
+  .pnode{aspect-ratio:1;border-radius:8px;background:var(--panel2);border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:11px;display:flex;align-items:center;justify-content:center;}
+  .pnode.answered{background:rgba(47,217,166,0.15);border-color:var(--teal);color:var(--teal);}
+  .pnode.current{border-color:var(--amber);color:var(--amber);box-shadow:0 0 0 2px rgba(244,169,59,0.25);}
+
+  .review-item{border-left:3px solid var(--border);padding:10px 0 10px 14px;margin-bottom:6px;}
+  .review-item.ok{border-color:var(--teal);}
+  .review-item.bad{border-color:var(--red);}
+  .review-item .qt{font-size:14px;color:var(--text);margin-bottom:4px;}
+  .review-item .ans{font-family:var(--mono);font-size:12px;color:var(--muted);}
+  .review-item .ans b{color:var(--text);}
+
+  .topline{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .backlink{color:var(--muted);font-size:13px;display:flex;align-items:center;gap:4px;}
+  .parsed-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;}
+  .parsed-row:last-child{border-bottom:none;}
+  .badge{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;background:var(--panel2);color:var(--muted);}
+  .badge.ok{color:var(--teal);}
+  .badge.warn{color:var(--amber);}
+  .checklist{max-height:280px;overflow-y:auto;}
+  .empty-hint{color:var(--muted);font-size:13px;text-align:center;padding:20px 0;}
+  ::-webkit-scrollbar{width:6px;} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ---------- storage abstraction (Claude artifact storage, falls back to localStorage when deployed standalone) ----------
+const store = {
+  async get(key){
+    if (window.storage){ try{ const r = await window.storage.get(key); return r ? r.value : null; }catch(e){ return null; } }
+    try{ return localStorage.getItem(key); }catch(e){ return null; }
+  },
+  async set(key, value){
+    if (window.storage){ try{ await window.storage.set(key, value); return; }catch(e){} }
+    try{ localStorage.setItem(key, value); }catch(e){}
+  }
+};
+
+// ---------- state ----------
+let state = {
+  screen: 'home',
+  sessions: [],
+  parsed: [],           // all parsed questions from current pdf
+  included: [],          // indices kept after review
+  quiz: null,            // {questions, answers, idx, timeLeft, timerId, total, includeAnswerCheck}
+  pdfName: '',
+  setup: { count: 50, minutes: 60, shuffle: true, marksPerQ: 2, passPct: 70 },
+  answerKeyGaps: []
+};
+
+async function loadSessions(){
+  const raw = await store.get('sessions');
+  state.sessions = raw ? JSON.parse(raw) : [];
+}
+async function saveSessions(){
+  await store.set('sessions', JSON.stringify(state.sessions));
+}
+
+// ---------- PDF extraction ----------
+async function extractLines(file){
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data:buf}).promise;
+  let lines = [];
+  for (let p=1;p<=pdf.numPages;p++){
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    const items = content.items.map(it=>({str:it.str, x:it.transform[4], y:Math.round(it.transform[5])}));
+    items.sort((a,b)=> b.y-a.y || a.x-b.x);
+    let curY=null, curLine=[];
+    for (const it of items){
+      if (curY===null || Math.abs(it.y-curY)>3){
+        if (curLine.length) lines.push(curLine.map(i=>i.str).join(' '));
+        curLine=[it]; curY=it.y;
+      } else { curLine.push(it); }
+    }
+    if (curLine.length) lines.push(curLine.map(i=>i.str).join(' '));
+    lines.push('---PAGEBREAK---');
+  }
+  return lines;
+}
+
+function parseQuestions(lines){
+  const questions = [];
+  let current = null;
+  const qStart = /^(\d{1,3})[\.\)]\s+(.+)$/;
+  const optStart = /^\(?([A-Da-d])[\.\)]\s+(.+)$/;
+  let currentOptKey = null;
+
+  for (let raw of lines){
+    const line = raw.trim();
+    if (!line || line==='---PAGEBREAK---') continue;
+    const qm = line.match(qStart);
+    const om = line.match(optStart);
+    if (qm && (!current || Object.keys(current.options).length>=2)){
+      if (current) questions.push(current);
+      current = {qnum: qm[1], text: qm[2].trim(), options:{}, order:[]};
+      currentOptKey = null;
+      continue;
+    }
+    if (om && current){
+      const key = om[1].toUpperCase();
+      current.options[key] = om[2].trim();
+      current.order.push(key);
+      currentOptKey = key;
+      continue;
+    }
+    if (current){
+      if (currentOptKey) current.options[currentOptKey] += ' ' + line;
+      else current.text += ' ' + line;
+    }
+  }
+  if (current) questions.push(current);
+  return questions.filter(q => Object.keys(q.options).length >= 2 && q.text.length > 3);
+}
+
+function parseAnswerKey(lines){
+  const map = {};
+  const text = lines.join('\n');
+  const idx = text.search(/answer\s*key|answers?\s*:/i);
+  const section = idx>=0 ? text.slice(idx) : '';
+  const re = /\b(\d{1,3})\s*[\.\)\-:]\s*([A-D])\b/g;
+  let m;
+  while((m = re.exec(section)) !== null){ map[m[1]] = m[2].toUpperCase(); }
+  return map;
+}
+
+// ---------- render helpers ----------
+const app = document.getElementById('app');
+function render(){ app.innerHTML = views[state.screen](); attach(); }
+function attach(){ attachers[state.screen] && attachers[state.screen](); }
+function fmtTime(sec){
+  const m = Math.floor(sec/60), s = sec%60;
+  return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+function header(title, sub){
+  return `<div class="rivet-bar">
+    <div class="brand"><div class="dot"></div><div><span>MCQ COCKPIT</span><small>${sub||'PRACTICE INSTRUMENT'}</small></div></div>
+  </div>` + (title? `<h1 style="font-family:var(--disp);font-size:20px;margin:0 0 16px;">${title}</h1>`:'');
+}
+
+// ---------- views ----------
+const views = {};
+const attachers = {};
+
+views.home = function(){
+  const totalSessions = state.sessions.length;
+  const avg = totalSessions ? Math.round(state.sessions.reduce((a,s)=>a+s.pct,0)/totalSessions) : 0;
+  const best = totalSessions ? Math.max(...state.sessions.map(s=>s.pct)) : 0;
+  const totalQ = state.sessions.reduce((a,s)=>a+s.total,0);
+  const last = state.sessions[state.sessions.length-1];
+  return `
+  ${header()}
+  <div class="panel">
+    <h2>Dashboard</h2>
+    <div class="stat-grid" style="margin-top:10px;">
+      <div class="stat"><label>Sessions</label><div class="val">${totalSessions}</div></div>
+      <div class="stat"><label>Questions Solved</label><div class="val teal">${totalQ}</div></div>
+      <div class="stat"><label>Average Score</label><div class="val">${avg}%</div></div>
+      <div class="stat"><label>Best Score</label><div class="val teal">${best}%</div></div>
+    </div>
+    ${last ? `<div style="margin-top:14px;font-size:12px;color:var(--muted);">Last session: <b style="color:${last.passed?'var(--teal)':'var(--red)'}">${last.obtainedMarks!==undefined ? last.obtainedMarks+'/'+last.totalMarks+' marks — '+(last.passed?'PASS':'FAIL') : last.pct+'%'}</b> — ${last.pdfName||'PDF'}</div>` : ''}
+  </div>
+
+  <div class="panel">
+    <h2>Load PDF Question Bank</h2>
+    <div class="upload-zone" id="dropZone" style="margin-top:10px;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8592AA" stroke-width="1.5"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
+      <div style="font-size:14px;color:var(--text);">Tap to select a PDF</div>
+      <div style="font-size:11px;margin-top:4px;">MCQ + optional Answer Key format</div>
+    </div>
+    <input type="file" id="pdfInput" accept="application/pdf">
+    <div id="uploadStatus" style="margin-top:10px;font-size:12px;color:var(--amber);"></div>
+  </div>
+
+  ${totalSessions ? `<div class="panel"><h2>Recent Sessions</h2>
+    ${state.sessions.slice(-5).reverse().map(s=>`
+      <div class="parsed-row"><span>${s.date}</span><span class="badge ${s.passed?'ok':'warn'}" style="${s.passed?'':'color:var(--red);'}">${s.obtainedMarks!==undefined ? s.obtainedMarks+'/'+s.totalMarks+' '+(s.passed?'PASS':'FAIL') : s.pct+'%'}</span></div>
+    `).join('')}
+  </div>`:''}
+  `;
+};
+attachers.home = function(){
+  const zone = document.getElementById('dropZone');
+  const input = document.getElementById('pdfInput');
+  zone.onclick = ()=> input.click();
+  input.onchange = async (e)=>{
+    const file = e.target.files[0];
+    if (!file) return;
+    state.pdfName = file.name;
+    document.getElementById('uploadStatus').textContent = 'Reading PDF…';
+    try{
+      const lines = await extractLines(file);
+      document.getElementById('uploadStatus').textContent = 'Detecting questions…';
+      const qs = parseQuestions(lines);
+      const keyMap = parseAnswerKey(lines);
+      qs.forEach(q => { q.correct = keyMap[q.qnum] || null; });
+      state.parsed = qs;
+      state.included = qs.map((_,i)=>i);
+      state.answerKeyGaps = qs.map((q,i)=>({q,i})).filter(x=>!x.q.correct);
+      if (!qs.length){
+        document.getElementById('uploadStatus').textContent = 'No questions detected — try a different PDF or check formatting.';
+        return;
+      }
+      state.screen = 'review';
+      render();
+    }catch(err){
+      document.getElementById('uploadStatus').textContent = 'Could not read this PDF: ' + err.message;
+    }
+  };
+};
+
+views.review = function(){
+  const n = state.parsed.length;
+  const withKey = state.parsed.filter(q=>q.correct).length;
+  return `
+  ${header('Parsed Questions')}
+  <div class="panel">
+    <div class="parsed-row"><span>Detected questions</span><span class="badge ok">${n}</span></div>
+    <div class="parsed-row"><span>Answer key found</span><span class="badge ${withKey===n?'ok':'warn'}">${withKey}/${n}</span></div>
+  </div>
+  <div class="panel">
+    <h2>Review & remove bad entries</h2>
+    <div class="checklist" style="margin-top:10px;">
+      ${state.parsed.map((q,i)=>`
+        <div class="parsed-row">
+          <span style="flex:1;padding-right:8px;">${q.qnum}. ${q.text.slice(0,60)}${q.text.length>60?'…':''}</span>
+          <input type="checkbox" data-i="${i}" ${state.included.includes(i)?'checked':''} class="rowcheck">
+        </div>
+      `).join('')}
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn ghost" id="backHome">Back</button>
+    <button class="btn primary" id="toSetup">Continue</button>
+  </div>
+  `;
+};
+attachers.review = function(){
+  document.getElementById('backHome').onclick = ()=>{ state.screen='home'; render(); };
+  document.querySelectorAll('.rowcheck').forEach(cb=>{
+    cb.onchange = (e)=>{
+      const i = parseInt(e.target.dataset.i);
+      if (e.target.checked) { if(!state.included.includes(i)) state.included.push(i); }
+      else { state.included = state.included.filter(x=>x!==i); }
+    };
+  });
+  document.getElementById('toSetup').onclick = ()=>{
+    if (!state.included.length){ alert('किमान एक प्रश्न निवडा'); return; }
+    state.setup.count = Math.min(50, state.included.length);
+    state.screen = 'setup';
+    render();
+  };
+};
+
+views.setup = function(){
+  const max = state.included.length;
+  return `
+  ${header('Session Setup')}
+  <div class="panel">
+    <div class="field">
+      <label class="field-label">Number of questions (max ${max})</label>
+      <input type="number" id="cntInput" min="1" max="${max}" value="${Math.min(state.setup.count,max)}">
+    </div>
+    <div class="field">
+      <label class="field-label">Timer (minutes, total)</label>
+      <input type="number" id="minInput" min="1" max="300" value="${state.setup.minutes}">
+    </div>
+    <div class="toggle-row">
+      <span style="font-size:14px;">Shuffle question order</span>
+      <div class="switch ${state.setup.shuffle?'on':''}" id="shuffleToggle"><div class="knob"></div></div>
+    </div>
+    <div class="field">
+      <label class="field-label">Marks per question</label>
+      <input type="number" id="marksInput" min="1" max="10" value="${state.setup.marksPerQ}">
+    </div>
+    <div class="field" style="margin-bottom:0;">
+      <label class="field-label">Passing percentage</label>
+      <input type="number" id="passInput" min="1" max="100" value="${state.setup.passPct}">
+    </div>
+    <div style="margin-top:10px;font-size:12px;color:var(--muted);font-family:var(--mono);">
+      Paper total: <b style="color:var(--text)">${Math.min(state.setup.count,max) * state.setup.marksPerQ}</b> marks &nbsp;|&nbsp; Passing marks: <b style="color:var(--amber)">${Math.ceil(Math.min(state.setup.count,max) * state.setup.marksPerQ * state.setup.passPct/100)}</b>
+    </div>
+  </div>
+  ${state.answerKeyGaps.length ? `<div class="panel"><h2>Answer key missing for ${state.answerKeyGaps.length} question(s)</h2>
+    <div style="font-size:12px;color:var(--muted);margin-top:6px;">You can mark those manually before scoring, or continue without scoring for them.</div>
+    <button class="btn ghost" style="margin-top:10px;" id="markGaps">Mark correct answers</button>
+  </div>` : ''}
+  <div class="btn-row">
+    <button class="btn ghost" id="backReview">Back</button>
+    <button class="btn primary" id="startQuiz">Start Practice</button>
+  </div>
+  `;
+};
+attachers.setup = function(){
+  document.getElementById('backReview').onclick = ()=>{ state.screen='review'; render(); };
+  document.getElementById('cntInput').onchange = (e)=>{ state.setup.count = parseInt(e.target.value)||1; render(); };
+  document.getElementById('minInput').onchange = (e)=> state.setup.minutes = parseInt(e.target.value)||1;
+  document.getElementById('shuffleToggle').onclick = (e)=>{ state.setup.shuffle = !state.setup.shuffle; render(); };
+  document.getElementById('marksInput').onchange = (e)=>{ state.setup.marksPerQ = parseInt(e.target.value)||1; render(); };
+  document.getElementById('passInput').onchange = (e)=>{ state.setup.passPct = parseInt(e.target.value)||1; render(); };
+  const gapsBtn = document.getElementById('markGaps');
+  if (gapsBtn) gapsBtn.onclick = ()=>{ state.screen='answerkey'; state.akIdx = 0; render(); };
+  document.getElementById('startQuiz').onclick = startQuiz;
+};
+
+views.answerkey = function(){
+  const gaps = state.answerKeyGaps;
+  const cur = gaps[state.akIdx];
+  if (!cur){ state.screen='setup'; return views.setup(); }
+  const q = cur.q;
+  return `
+  ${header('Mark Correct Answer')}
+  <div class="q-progress" style="margin-bottom:10px;">Gap <b>${state.akIdx+1}</b> / ${gaps.length}</div>
+  <div class="qcard"><div class="qnum">Q${q.qnum}</div><div class="qtext">${q.text}</div></div>
+  ${q.order.map(k=>`<div class="opt" data-k="${k}"><div class="key">${k}</div><div>${q.options[k]}</div></div>`).join('')}
+  <div class="btn-row" style="margin-top:10px;">
+    <button class="btn ghost" id="skipGap">Skip</button>
+  </div>
+  `;
+};
+attachers.answerkey = function(){
+  document.querySelectorAll('.opt').forEach(el=>{
+    el.onclick = ()=>{
+      const cur = state.answerKeyGaps[state.akIdx];
+      cur.q.correct = el.dataset.k;
+      state.akIdx++;
+      if (state.akIdx >= state.answerKeyGaps.length){ state.answerKeyGaps = state.parsed.filter(q=>!q.correct); state.screen='setup'; }
+      render();
+    };
+  });
+  document.getElementById('skipGap').onclick = ()=>{
+    state.akIdx++;
+    if (state.akIdx >= state.answerKeyGaps.length){ state.answerKeyGaps = state.parsed.filter(q=>!q.correct); state.screen='setup'; }
+    render();
+  };
+};
+
+function startQuiz(){
+  let pool = state.included.map(i=>state.parsed[i]);
+  if (state.setup.shuffle){
+    for (let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+  }
+  pool = pool.slice(0, state.setup.count);
+  state.quiz = {
+    questions: pool,
+    answers: {},
+    idx: 0,
+    totalSec: state.setup.minutes*60,
+    timeLeft: state.setup.minutes*60,
+    startedAt: Date.now(),
+    marksPerQ: state.setup.marksPerQ,
+    passPct: state.setup.passPct
+  };
+  state.screen = 'quiz';
+  render();
+  runTimer();
+}
+
+let timerHandle = null;
+function runTimer(){
+  if (timerHandle) clearInterval(timerHandle);
+  timerHandle = setInterval(()=>{
+    if (!state.quiz){ clearInterval(timerHandle); return; }
+    state.quiz.timeLeft--;
+    if (state.quiz.timeLeft <= 0){
+      clearInterval(timerHandle);
+      state.quiz.timeLeft = 0;
+      finishQuiz();
+      return;
+    }
+    const ring = document.getElementById('timerRing');
+    const label = document.getElementById('timerLabel');
+    if (ring && label){
+      const pct = 100 - Math.round((state.quiz.timeLeft/state.quiz.totalSec)*100);
+      ring.style.setProperty('--pct', pct);
+      ring.classList.toggle('low', state.quiz.timeLeft < state.quiz.totalSec*0.1);
+      label.textContent = fmtTime(state.quiz.timeLeft);
+    }
+  }, 1000);
+}
+
+views.quiz = function(){
+  const qz = state.quiz;
+  const q = qz.questions[qz.idx];
+  const pct = 100 - Math.round((qz.timeLeft/qz.totalSec)*100);
+  const answeredCount = Object.keys(qz.answers).length;
+  return `
+  <div class="q-top">
+    <div class="q-progress">Question <b>${qz.idx+1}</b> / ${qz.questions.length}</div>
+    <div class="timer-wrap">
+      <div class="ring ${qz.timeLeft < qz.totalSec*0.1?'low':''}" id="timerRing" style="--pct:${pct}"><span id="timerLabel">${fmtTime(qz.timeLeft)}</span></div>
+    </div>
+  </div>
+  <div class="qcard">
+    <div class="qnum">Q${q.qnum}</div>
+    <div class="qtext">${q.text}</div>
+  </div>
+  ${q.order.map(k=>`<div class="opt ${qz.answers[qz.idx]===k?'selected':''}" data-k="${k}"><div class="key">${k}</div><div>${q.options[k]}</div></div>`).join('')}
+
+  <div class="panel" style="margin-top:16px;">
+    <h2>Question Map (${answeredCount}/${qz.questions.length} answered)</h2>
+    <div class="palette" style="margin-top:10px;">
+      ${qz.questions.map((_,i)=>`<div class="pnode ${qz.answers[i]?'answered':''} ${i===qz.idx?'current':''}" data-i="${i}">${i+1}</div>`).join('')}
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn ghost" id="prevBtn" ${qz.idx===0?'disabled':''}>Previous</button>
+    ${qz.idx===qz.questions.length-1
+      ? `<button class="btn primary" id="submitBtn">Submit</button>`
+      : `<button class="btn primary" id="nextBtn">Next</button>`}
+  </div>
+  <button class="btn ghost" id="submitEarly" style="margin-top:10px;">Submit Now</button>
+  `;
+};
+attachers.quiz = function(){
+  document.querySelectorAll('.opt').forEach(el=>{
+    el.onclick = ()=>{ state.quiz.answers[state.quiz.idx] = el.dataset.k; render(); };
+  });
+  document.querySelectorAll('.pnode').forEach(el=>{
+    el.onclick = ()=>{ state.quiz.idx = parseInt(el.dataset.i); render(); };
+  });
+  const prev = document.getElementById('prevBtn');
+  if (prev) prev.onclick = ()=>{ state.quiz.idx = Math.max(0, state.quiz.idx-1); render(); };
+  const next = document.getElementById('nextBtn');
+  if (next) next.onclick = ()=>{ state.quiz.idx = Math.min(state.quiz.questions.length-1, state.quiz.idx+1); render(); };
+  const submit = document.getElementById('submitBtn');
+  if (submit) submit.onclick = finishQuiz;
+  const submitEarly = document.getElementById('submitEarly');
+  if (submitEarly) submitEarly.onclick = ()=>{ if(confirm('आत्ताच सबमिट करायचे का?')) finishQuiz(); };
+};
+
+function finishQuiz(){
+  if (timerHandle) clearInterval(timerHandle);
+  const qz = state.quiz;
+  let correct = 0, scorable = 0;
+  const review = qz.questions.map((q,i)=>{
+    const given = qz.answers[i] || null;
+    if (q.correct){ scorable++; if (given===q.correct) correct++; }
+    return {qnum:q.qnum, text:q.text, given, correct:q.correct, options:q.options};
+  });
+  const pct = scorable ? Math.round((correct/scorable)*100) : 0;
+  const marksPerQ = qz.marksPerQ || 2;
+  const passPct = qz.passPct || 70;
+  const totalMarks = scorable * marksPerQ;
+  const obtainedMarks = correct * marksPerQ;
+  const passingMarks = Math.ceil(totalMarks * passPct / 100);
+  const passed = pct >= passPct;
+  const session = {
+    date: new Date().toLocaleString('en-IN', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}),
+    pdfName: state.pdfName,
+    total: qz.questions.length,
+    scorable, correct, pct,
+    marksPerQ, totalMarks, obtainedMarks, passingMarks, passPct, passed,
+    timeUsedSec: qz.totalSec - qz.timeLeft
+  };
+  state.sessions.push(session);
+  saveSessions();
+  state.lastReview = review;
+  state.lastSession = session;
+  state.screen = 'result';
+  render();
+}
+
+function marksPerQNote(s){ return s.marksPerQ + ' mark(s) per question'; }
+const badgeSVG = {
+  pass: `<svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+    <polygon points="36,4 62,14 62,36 36,68 10,36 10,14" fill="rgba(47,217,166,0.12)" stroke="#2FD9A6" stroke-width="2.5"/>
+    <path d="M23 36l9 9 17-19" stroke="#2FD9A6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </svg>`,
+  fail: `<svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+    <polygon points="36,4 68,64 4,64" fill="rgba(229,72,77,0.12)" stroke="#E5484D" stroke-width="2.5" stroke-linejoin="round"/>
+    <line x1="36" y1="26" x2="36" y2="42" stroke="#E5484D" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="36" cy="52" r="2.6" fill="#E5484D"/>
+  </svg>`
+};
+
+views.result = function(){
+  const s = state.lastSession;
+  const rev = state.lastReview;
+  const statusColor = s.passed ? 'var(--teal)' : 'var(--red)';
+  return `
+  ${header('Session Result')}
+  <div class="panel" style="text-align:center;">
+    <div style="margin:4px 0 6px;">${s.passed ? badgeSVG.pass : badgeSVG.fail}</div>
+    <div style="font-family:var(--disp);font-size:20px;letter-spacing:3px;color:${statusColor};margin-bottom:6px;">${s.passed ? 'PASS' : 'FAIL'}</div>
+    <div style="font-family:var(--disp);font-size:40px;color:var(--text);">${s.obtainedMarks} <span style="font-size:20px;color:var(--muted);">/ ${s.totalMarks}</span></div>
+    <div style="color:var(--muted);font-size:12px;margin:4px 0 10px;">MARKS &nbsp;•&nbsp; ${marksPerQNote(s)}</div>
+    <div class="stat-grid" style="text-align:left;">
+      <div class="stat"><label>Percentage</label><div class="val ${s.passed?'teal':''}">${s.pct}%</div></div>
+      <div class="stat"><label>Passing marks</label><div class="val">${s.passingMarks} (${s.passPct}%)</div></div>
+    </div>
+    <div style="color:var(--muted);font-size:12px;margin-top:12px;">${s.correct} correct out of ${s.scorable} scorable (${s.total} attempted) — time used ${fmtTime(s.timeUsedSec)}</div>
+  </div>
+  <div class="panel">
+    <h2>Review</h2>
+    <div class="checklist" style="margin-top:10px;">
+      ${rev.map(r=>{
+        const ok = r.correct ? (r.given===r.correct) : null;
+        return `<div class="review-item ${ok===true?'ok':ok===false?'bad':''}">
+          <div class="qt">Q${r.qnum}. ${r.text}</div>
+          <div class="ans">Your answer: <b>${r.given||'—'}</b> ${r.correct? ' | Correct: <b>'+r.correct+'</b>' : ' | (no answer key)'}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn ghost" id="toHome">Dashboard</button>
+    <button class="btn primary" id="retake">Practice Again</button>
+  </div>
+  `;
+};
+attachers.result = function(){
+  document.getElementById('toHome').onclick = ()=>{ state.screen='home'; render(); };
+  document.getElementById('retake').onclick = ()=>{ state.screen='setup'; render(); };
+};
+
+// ---------- boot ----------
+(async function(){
+  await loadSessions();
+  render();
+})();
+
+// Register service worker only when hosted on a real server (not inside the Claude artifact sandbox)
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
